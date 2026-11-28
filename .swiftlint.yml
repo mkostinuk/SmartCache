@@ -1,0 +1,38 @@
+included:
+  - Sources
+  - Tests
+
+disabled_rules:
+  - opening_brace
+  - todo
+
+opt_in_rules:
+  - empty_count
+  - explicit_init
+  - first_where
+  - force_unwrapping
+  - redundant_nil_coalescing
+  - unneeded_parentheses_in_closure_argument
+
+line_length:
+  warning: 140
+  error: 200
+
+identifier_name:
+  min_length: 1
+  excluded:
+    - id
+    - to
+
+type_body_length:
+  warning: 320
+  error: 420
+
+file_length:
+  warning: 420
+
+function_body_length:
+  warning: 60
+
+force_unwrapping:
+  severity: warning
