@@ -3,8 +3,10 @@ import Foundation
 /// A cache that keeps track of what each value cost to obtain.
 ///
 /// Every entry carries a ``CacheCost`` — how long a refetch would take — and
-/// the number of times it has been read. Later steps use those two numbers to
-/// decide what leaves first; at this point the cache stores, serves and counts.
+/// the number of times it has been read. When the cache runs out of budget it
+/// ranks entries by cost, size and use through an ``EvictionPolicy``, so an
+/// image that takes two seconds to download again outlives one that takes five
+/// milliseconds to read from disk.
 ///
 /// ```swift
 /// let cache = SmartCache<String, Data>()
@@ -20,6 +22,7 @@ public actor SmartCache<Key: Hashable & Sendable, Value: SmartCacheValue>{
 
     var entries: [Key: CacheEntry<Value>] = [:]
     var counters = SmartCacheStatistics()
+    var inflation: Double = 0
     var memoryBytes = 0
 
     /// Creates a cache.
@@ -78,7 +81,7 @@ public actor SmartCache<Key: Hashable & Sendable, Value: SmartCacheValue>{
     ///   - key: Key to cache it under.
     ///   - cost: What a refetch would cost; ``SmartCacheConfiguration/defaultCost`` when omitted.
     public func insert(_ value: Value, for key: Key, cost: CacheCost? = nil){
-        remove(key)
+        remove(key, countingAsEviction: false)
 
         let size = max(1, value.cacheByteSize)
         entries[key] = CacheEntry(
@@ -87,24 +90,25 @@ public actor SmartCache<Key: Hashable & Sendable, Value: SmartCacheValue>{
             memoryBytes: size,
             cost: cost ?? configuration.defaultCost,
             frequency: 1,
-            lastAccess: Date()
+            lastAccess: Date(),
+            inflation: inflation
         )
         memoryBytes += size
+
+        enforceLimits()
     }
 
     /// Drops the entry for a key.
     /// - Parameter key: Key to drop.
     public func remove(_ key: Key){
-        guard let entry = entries.removeValue(forKey: key) else{
-            return
-        }
-        memoryBytes -= entry.memoryBytes
+        remove(key, countingAsEviction: false)
     }
 
     /// Drops every entry.
     public func removeAll(){
         entries.removeAll()
         memoryBytes = 0
+        inflation = 0
     }
 
     // MARK: - Hits
@@ -116,6 +120,7 @@ public actor SmartCache<Key: Hashable & Sendable, Value: SmartCacheValue>{
 
         entry.frequency += 1
         entry.lastAccess = Date()
+        entry.inflation = inflation
         entries[key] = entry
 
         counters.memoryHits += 1

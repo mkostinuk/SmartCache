@@ -77,15 +77,4 @@ struct StoreTests{
 
         #expect(await cache.entries["a"]?.cost == .unknown)
     }
-
-    @Test("The memory budget is tracked but not yet enforced")
-    func budgetIsTrackedButNotEnforced() async{
-        let cache = SmartCache<String, Blob>(configuration: SmartCacheConfiguration(memoryLimit: 10 * kilobyte))
-        for index in 0..<5{
-            await cache.insert(Blob(byteSize: 4 * kilobyte, marker: UInt8(index)), for: "k\(index)")
-        }
-
-        #expect(await cache.count == 5)
-        #expect(await cache.statistics.memoryBytes == 20 * kilobyte)
-    }
 }

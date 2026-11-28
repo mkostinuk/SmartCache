@@ -7,4 +7,5 @@ struct CacheEntry<Value: SmartCacheValue>{
     var cost: CacheCost
     var frequency: Int
     var lastAccess: Date
+    var inflation: Double
 }

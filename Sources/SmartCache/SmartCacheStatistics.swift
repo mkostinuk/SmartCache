@@ -4,6 +4,8 @@ import Foundation
 public struct SmartCacheStatistics: Sendable, Equatable{
     /// Lookups served from memory.
     public var memoryHits = 0
+    /// Entries that were dropped to stay inside the budget.
+    public var evictions = 0
     /// Refetch time avoided by hits, in seconds.
     public var secondsSaved: TimeInterval = 0
     /// Bytes currently held in memory.
